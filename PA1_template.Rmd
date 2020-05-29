@@ -5,21 +5,116 @@ output:
     keep_md: true
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
 
 ## Loading and preprocessing the data
 
+The intervals are provided in HHMM format.
+These are extracted and reformated as hours.
+
+```{r}
+activity_data <- read_csv("activity.csv",
+                          col_types = c("dDc")) %>%
+  mutate(interval = str_pad(interval,
+                            width = 4,
+                            side = "left",
+                            pad = "0")) %>%
+  extract(interval,
+          into = c("hr", "min"),
+          regex = "(\\d{2})(\\d{2})",
+          convert = TRUE) %>%
+  mutate(interval = hr + (min / 60))
+
+head(activity_data, 10)
+```
 
 
 ## What is mean total number of steps taken per day?
 
+```{r}
+daily_data <- activity_data %>%
+  drop_na() %>%
+  group_by(date) %>%
+  summarize(steps = sum(steps))
 
+ggplot(data = daily_data,
+       aes(x = steps)) +
+  geom_histogram(bins = 20) +
+  ylab("days") +
+  scale_y_continuous(breaks = seq(0, 12, by = 2))
+
+daily_mean <- mean(daily_data$steps)
+print(paste("Mean is",
+            daily_mean))
+daily_median <- median(daily_data$steps)
+print(paste("Median is",
+            daily_median))
+```
 
 ## What is the average daily activity pattern?
 
+```{r}
+daily_pattern <- activity_data %>%
+  drop_na() %>%
+  group_by(interval) %>%
+  summarize(steps = mean(steps))
 
+ggplot(data = daily_pattern) +
+  geom_line(aes(x = interval,
+                y = steps)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 3))
+
+max_interval <- daily_pattern %>%
+  filter(steps == max(daily_pattern$steps)) %>%
+  pull(interval)
+
+# converting the hours back to HH:MM
+max_int_hr <- floor(max_interval)
+max_int_min <- 60 * (max_interval - max_int_hr)
+max_int_str <- paste(max_int_hr,
+                     max_int_min,
+                     sep = ":")
+
+print(paste("Maximum step interval is",
+            max_int_str))
+```
 
 ## Imputing missing values
 
+```{r}
+na_count <- activity_data %>%
+  filter(is.na(steps)) %>%
+  nrow() %>%
+  as.numeric()
+print(paste("Number of NA rows is",
+            na_count))
 
+activity_clean <- activity_data %>%
+  left_join(daily_pattern,
+            by = "interval") %>%
+  mutate(steps = coalesce(steps.x, steps.y)) %>%
+  # mutate(steps = round(steps)) %>%                # unnecessary
+  select(steps, date, interval)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+weekend_data <- activity_clean %>%
+  mutate(day_of_week = weekdays(date)) %>%
+  mutate(weekend = as.factor(if_else(day_of_week == "Saturday" |
+                                       day_of_week == "Sunday",
+                                     "weekend",
+                                     "weekday"))) %>%
+  group_by(weekend, interval) %>%
+  summarize(steps = mean(steps))
+
+ggplot(data = weekend_data) +
+  geom_line(aes(x = interval,
+                y = steps,
+                color = weekend)) +
+  scale_x_continuous(breaks = seq(0, 24, by = 3))
+```
