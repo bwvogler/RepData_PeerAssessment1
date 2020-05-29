@@ -96,7 +96,6 @@ activity_clean <- activity_data %>%
   left_join(daily_pattern,
             by = "interval") %>%
   mutate(steps = coalesce(steps.x, steps.y)) %>%
-  # mutate(steps = round(steps)) %>%                # unnecessary
   select(steps, date, interval)
 ```
 
