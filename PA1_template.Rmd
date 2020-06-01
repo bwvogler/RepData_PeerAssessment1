@@ -40,6 +40,8 @@ daily_data <- activity_data %>%
   group_by(date) %>%
   summarize(steps = sum(steps))
 
+head(daily_data, 10)
+
 ggplot(data = daily_data,
        aes(x = steps)) +
   geom_histogram(bins = 20) +
@@ -97,6 +99,24 @@ activity_clean <- activity_data %>%
             by = "interval") %>%
   mutate(steps = coalesce(steps.x, steps.y)) %>%
   select(steps, date, interval)
+
+daily_clean <- activity_clean %>%
+  drop_na() %>%
+  group_by(date) %>%
+  summarize(steps = sum(steps))
+
+ggplot(data = daily_clean,
+       aes(x = steps)) +
+  geom_histogram(bins = 20) +
+  ylab("days") +
+  scale_y_continuous(breaks = seq(0, 12, by = 2))
+
+daily_mean <- mean(daily_clean$steps)
+print(paste("Mean is",
+            daily_mean))
+daily_median <- median(daily_clean$steps)
+print(paste("Median is",
+            daily_median))
 ```
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -113,7 +133,8 @@ weekend_data <- activity_clean %>%
 
 ggplot(data = weekend_data) +
   geom_line(aes(x = interval,
-                y = steps,
-                color = weekend)) +
+                y = steps)) +
+  facet_wrap(~weekend,
+             ncol = 1) +
   scale_x_continuous(breaks = seq(0, 24, by = 3))
 ```

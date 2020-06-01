@@ -55,6 +55,26 @@ daily_data <- activity_data %>%
   group_by(date) %>%
   summarize(steps = sum(steps))
 
+head(daily_data, 10)
+```
+
+```
+## # A tibble: 10 x 2
+##    date       steps
+##    <date>     <dbl>
+##  1 2012-10-02   126
+##  2 2012-10-03 11352
+##  3 2012-10-04 12116
+##  4 2012-10-05 13294
+##  5 2012-10-06 15420
+##  6 2012-10-07 11015
+##  7 2012-10-09 12811
+##  8 2012-10-10  9900
+##  9 2012-10-11 10304
+## 10 2012-10-12 17382
+```
+
+```r
 ggplot(data = daily_data,
        aes(x = steps)) +
   geom_histogram(bins = 20) +
@@ -143,6 +163,39 @@ activity_clean <- activity_data %>%
             by = "interval") %>%
   mutate(steps = coalesce(steps.x, steps.y)) %>%
   select(steps, date, interval)
+
+daily_clean <- activity_clean %>%
+  drop_na() %>%
+  group_by(date) %>%
+  summarize(steps = sum(steps))
+
+ggplot(data = daily_clean,
+       aes(x = steps)) +
+  geom_histogram(bins = 20) +
+  ylab("days") +
+  scale_y_continuous(breaks = seq(0, 12, by = 2))
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
+```r
+daily_mean <- mean(daily_clean$steps)
+print(paste("Mean is",
+            daily_mean))
+```
+
+```
+## [1] "Mean is 10766.1886792453"
+```
+
+```r
+daily_median <- median(daily_clean$steps)
+print(paste("Median is",
+            daily_median))
+```
+
+```
+## [1] "Median is 10766.1886792453"
 ```
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -160,8 +213,9 @@ weekend_data <- activity_clean %>%
 
 ggplot(data = weekend_data) +
   geom_line(aes(x = interval,
-                y = steps,
-                color = weekend)) +
+                y = steps)) +
+  facet_wrap(~weekend,
+             ncol = 1) +
   scale_x_continuous(breaks = seq(0, 24, by = 3))
 ```
 
